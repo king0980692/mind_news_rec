@@ -134,20 +134,22 @@ else:
         out_f = open(args.out, 'w', encoding='utf-8')
         for line in tqdm(f):
             imp_id, u_id, imp_time, history, imprs = line.split("\t")
-
+            
             for impr in imprs.strip().split(' '):
+                label = impr[-1]
+                n_id = impr[:-2]
                 pos_out = \
-                        "1 {}:1 {}:1\n".format(
+                        "{}:1 {}:1\n".format( 
                             *[idx+offset_list[i]
                             for i, idx in enumerate(
                             [
                                 user_encode[u_id]
                                     if u_id in user_encode
                                     else user_encode['cold_user'],
-                                news_encode[impr]
-                                    if impr in news_encode
+                                news_encode[n_id]
+                                    if n_id in news_encode
                                     else news_encode['cold_news']
                             ])
                         ])
-
+                pos_out = f"{label}" + " " + pos_out
                 out_f.write(pos_out)
