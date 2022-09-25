@@ -1,31 +1,39 @@
+from operator import neg
 import os
 import pickle
+from nltk.classify.maxent import tempfile
 from tqdm import tqdm
 import argparse
 import random
 from itertools import accumulate
-
-
+from collections import defaultdict
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--pkl_list', nargs='+')
+parser.add_argument('--news_map', type=str)
 parser.add_argument('--beh_file', type=str)
 parser.add_argument('--negative_num', type=int, default=4)
 parser.add_argument('--out')
 args = parser.parse_args()
 
 
+news_map = pickle.load(open(args.news_map,'rb'))
+cat_encode = {}
+sub_cat_encode = {}
 user_encode = {}
 news_encode = {}
+news_tfidf = {}
 # Load all pkl 
 for pkl in args.pkl_list:
     var_name = os.path.split(pkl)[-1].split(".")[0]
     globals()[var_name] = pickle.load(open(pkl,'rb'))
 
-offset_list = list(accumulate([0, len(user_encode), len(news_encode)]))
+offset_list = list(accumulate([
+    0, len(user_encode), len(news_encode), 
+    len(cat_encode), len(sub_cat_encode)
+    ]))
 
-
-
+    
 if "train" in args.beh_file:
     with open(args.beh_file) as f:
 
@@ -52,37 +60,63 @@ if "train" in args.beh_file:
             if positive_samples_num * args.negative_num > negative_samples_num:
                 k = 0
                 for i in range(positive_samples_num):
-                    # pos_out = '1 %d:1 %d:1\n' % (news_encode[positive_samples[i]], user_encode[u_id]) 
-                    pos_out = \
-                        "1 {}:1 {}:1\n".format(
-                            *[idx+offset_list[i]
-                            for i, idx in enumerate(
-                            [
-                                user_encode[u_id] 
-                                    if u_id in user_encode
-                                    else user_encode['cold_user'],
-                                news_encode[positive_samples[i]] 
-                                    if positive_samples[i] in news_encode
-                                    else news_encode['cold_news']
-                            ])
-                        ])
-                    
-                    out_f.write(pos_out)
-                    for j in range(args.negative_num):
-                        n_k = negative_samples[k % negative_samples_num]
-                        neg_out = \
-                            "0 {}:1 {}:1\n".format(
-                                *[idx+offset_list[i]
+                    n_id = positive_samples[i]
+                    cat = news_map[n_id]['cat']
+                    sub_cat = news_map[n_id]['sub_cat']
+                     
+                    _tfidf = news_tfidf[n_id] if n_id in news_tfidf else ""
+
+                    fea_list = [
+                                idx+offset_list[i]
+                                # idx + idx_list
                                 for i, idx in enumerate(
                                 [
                                     user_encode[u_id]
                                         if u_id in user_encode
                                         else user_encode['cold_user'],
-                                    news_encode[n_k]
-                                        if n_k in news_encode
-                                        else news_encode['cold_news']
+                                    news_encode[n_id]
+                                        if n_id in news_encode
+                                        else news_encode['cold_news'],
+                                    cat_encode[cat] 
+                                        if cat in cat_encode
+                                        else cat_encode['cold_cat'],
+                                    sub_cat_encode[sub_cat] 
+                                        if sub_cat in sub_cat_encode
+                                        else sub_cat_encode['cold_sub_cat']
                                 ])
+                            ]
+                    fea =  " ".join(["{}:1"]*len(fea_list)).format(*fea_list)
+                    pos_out = " ".join(["1", _tfidf, fea])+"\n"
+
+                    out_f.write(pos_out)
+                    for j in range(args.negative_num):
+                        n_k = negative_samples[k % negative_samples_num]
+
+                        cat = news_map[n_k]['cat']
+                        sub_cat = news_map[n_k]['sub_cat']
+                        _tfidf = news_tfidf[n_k] if n_k in news_tfidf else ""
+
+                        fea_list = [
+                            idx+offset_list[i]
+                            # idx + idx_list
+                            for i, idx in enumerate(
+                            [
+                                user_encode[u_id]
+                                    if u_id in user_encode
+                                    else user_encode['cold_user'],
+                                news_encode[n_id]
+                                    if n_id in news_encode
+                                    else news_encode['cold_news'],
+                                cat_encode[cat] 
+                                    if cat in cat_encode
+                                    else cat_encode['cold_cat'],
+                                sub_cat_encode[sub_cat] 
+                                    if sub_cat in sub_cat_encode
+                                    else sub_cat_encode['cold_sub_cat']
                             ])
+                        ]
+                        fea =  " ".join(["{}:1"]*len(fea_list)).format(*fea_list)
+                        neg_out = " ".join(['0', _tfidf, fea])+"\n"
 
                         out_f.write(neg_out)
                         k += 1
@@ -94,53 +128,43 @@ if "train" in args.beh_file:
 
                 k = 0
                 for i in range(positive_samples_num):
-                    pos_out = \
-                            "1 {}:1 {}:1\n".format(
-                                *[idx+offset_list[i]
-                                for i, idx in enumerate(
-                                [
-                                    user_encode[u_id]
-                                        if u_id in user_encode
-                                        else user_encode['cold_user'],
-                                    news_encode[positive_samples[i]]
-                                        if positive_samples[i] in news_encode
-                                        else news_encode['cold_news']
-                                ])
-                            ])
+                    n_id = positive_samples[i]
+                    cat = news_map[n_id]['cat']
+                    sub_cat = news_map[n_id]['sub_cat']
+                    _tfidf = news_tfidf[n_id] if n_id in news_tfidf else ""
+
+                    fea_list = [
+                        idx+offset_list[i]
+                        # idx + idx_list
+                        for i, idx in enumerate(
+                        [
+                            user_encode[u_id]
+                                if u_id in user_encode
+                                else user_encode['cold_user'],
+                            news_encode[n_id]
+                                if n_id in news_encode
+                                else news_encode['cold_news'],
+                            cat_encode[cat] 
+                                if cat in cat_encode
+                                else cat_encode['cold_cat'],
+                            sub_cat_encode[sub_cat] 
+                                if sub_cat in sub_cat_encode
+                                else sub_cat_encode['cold_sub_cat']
+                        ])
+                    ]
+                    fea =  " ".join(["{}:1"]*len(fea_list)).format(*fea_list)
+                    pos_out = " ".join(["1", _tfidf, fea])+"\n"
 
                     out_f.write(pos_out)
                     for j in range(args.negative_num):
                         n_k = negative_samples[sample_index[k]]
-                        neg_out = \
-                            "0 {}:1 {}:1\n".format(
-                                *[idx+offset_list[i]
-                                for i, idx in enumerate(
-                                [
-                                    user_encode[u_id]
-                                        if u_id in user_encode
-                                        else user_encode['cold_user'],
-                                    news_encode[n_k]
-                                        if n_k in news_encode
-                                        else news_encode['cold_news']
-                                ])
-                            ])
+                        cat = news_map[n_k]['cat']
+                        sub_cat = news_map[n_k]['sub_cat']
 
-                        out_f.write(neg_out)
-                        k += 1
-        out_f.close()
-
-else:
-    with open(args.beh_file) as f:
-        out_f = open(args.out, 'w', encoding='utf-8')
-        for line in tqdm(f):
-            imp_id, u_id, imp_time, history, imprs = line.split("\t")
-            
-            for impr in imprs.strip().split(' '):
-                label = impr[-1]
-                n_id = impr[:-2]
-                pos_out = \
-                        "{}:1 {}:1\n".format( 
-                            *[idx+offset_list[i]
+                        _tfidf = news_tfidf[n_id] if n_id in news_tfidf else ""
+                        fea_list = [
+                            idx+offset_list[i]
+                            # idx + idx_list
                             for i, idx in enumerate(
                             [
                                 user_encode[u_id]
@@ -148,8 +172,85 @@ else:
                                     else user_encode['cold_user'],
                                 news_encode[n_id]
                                     if n_id in news_encode
-                                    else news_encode['cold_news']
+                                    else news_encode['cold_news'],
+                                cat_encode[cat] 
+                                    if cat in cat_encode
+                                    else cat_encode['cold_cat'],
+                                sub_cat_encode[sub_cat] 
+                                    if sub_cat in sub_cat_encode
+                                    else sub_cat_encode['cold_sub_cat']
                             ])
-                        ])
-                pos_out = f"{label}" + " " + pos_out
+                        ]
+                        fea =  " ".join(["{}:1"]*len(fea_list)).format(*fea_list)
+                        neg_out = " ".join(['0', _tfidf, fea])+"\n"
+                        out_f.write(neg_out)
+                        k += 1
+        out_f.close()
+
+else: # valid, test set use the default data
+    with open(args.beh_file) as f:
+        out_f = open(args.out, 'w', encoding='utf-8')
+        for line in tqdm(f.readlines()):
+            imp_id, u_id, imp_time, history, imprs = line.split("\t")
+            
+            for impr in imprs.strip().split(' '):
+                label = impr[-1]
+
+                n_id = impr[:-2] \
+                    if impr[:-2] in news_map \
+                    else 'cold_news'
+
+                cat = news_map[n_id]['cat'] \
+                    if len(news_map[n_id]['cat']) > 0 \
+                    else "cold_cat"
+                
+                sub_cat = news_map[n_id]['sub_cat'] \
+                    if len(news_map[n_id]['sub_cat']) > 0  \
+                    else "cold_cat"
+                    
+                _tfidf = news_tfidf[n_id] if n_id in news_tfidf else ""
+                fea_list = [
+                    idx+offset_list[i]
+                    # idx + idx_list
+                    for i, idx in enumerate(
+                    [
+                        user_encode[u_id]
+                            if u_id in user_encode
+                            else user_encode['cold_user'],
+                        news_encode[n_id]
+                            if n_id in news_encode
+                            else news_encode['cold_news'],
+                        cat_encode[cat] 
+                            if cat in cat_encode
+                            else cat_encode['cold_cat'],
+                        sub_cat_encode[sub_cat] 
+                            if sub_cat in sub_cat_encode
+                            else sub_cat_encode['cold_sub_cat']
+                    ])
+                ]
+                fea =  " ".join(["{}:1"]*len(fea_list)).format(*fea_list)
+                pos_out = " ".join([label, _tfidf, fea])+"\n"
+             
                 out_f.write(pos_out)
+
+# -----------
+                        # neg_out = \
+                                # "{}:1 {}:1 {}:1 {}:1\n".format(
+                                # *[idx+offset_list[i]
+                                # for i, idx in enumerate(
+                                # [
+                                    # user_encode[u_id]
+                                        # if u_id in user_encode
+                                        # else user_encode['cold_user'],
+                                    # news_encode[n_k]
+                                        # if n_k in news_encode
+                                        # else news_encode['cold_news'],
+                                    # cat_encode[cat] 
+                                        # if cat in cat_encode
+                                        # else cat_encode['cold_cat'],
+                                    # sub_cat_encode[sub_cat] 
+                                        # if sub_cat in sub_cat_encode
+                                        # else sub_cat_encode['cold_sub_cat']
+                                # ])
+                            # ])
+                        # neg_out = "0" + " " + _tfidf + " " + neg_out
