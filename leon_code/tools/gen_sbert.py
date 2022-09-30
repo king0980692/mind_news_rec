@@ -12,8 +12,8 @@ from collections import defaultdict, Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 from sentence_transformers import SentenceTransformer
-# model = SentenceTransformer('all-MiniLM-L6-v2')
-model = SentenceTransformer('all-roberta-large-v1')
+model = SentenceTransformer('all-MiniLM-L6-v2', device='cuda:0')
+# model = SentenceTransformer('all-roberta-large-v1')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data')
@@ -48,7 +48,7 @@ def build_meta():
 
     for data_type in Path(args.data).iterdir():
         news_file = data_type / "news.tsv"
-        print("tfidf - Encode: ", news_file)
+        print("tokenize file: ", news_file)
         with open(news_file, 'r', encoding='utf-8') as news_f:
             for line in tqdm(news_f.readlines()):
 
@@ -102,12 +102,11 @@ def build_meta():
 
     # tfidf_matrix = vectorizer.fit_transform(sentence_corpus)
     sentence_embeddings = model.encode(sentence_corpus)
-    import IPython;IPython.embed(colors="neutral");exit(1) 
 
     user_history_dict = {}
     for data_type in Path(args.data).iterdir():
         beh_file = data_type / "behaviors.tsv"
-        print("tfidf - Encode: ", beh_file)
+        print("sbert - Encode: ", beh_file)
         with open(beh_file, 'r', encoding='utf-8') as behaviors_f:
             for line in tqdm(behaviors_f.readlines()):
                 impression_ID, user_ID, time, history, impressions = line.split('\t')
@@ -154,21 +153,22 @@ def generate_news_embeddings(news_dict, sentence_embeddings):
 
     news_embed = {}
     news_embed_str = {}
-    import IPython;IPython.embed(colors="neutral");exit(1) 
     # iterate all news
     for news_ID in tqdm(news_dict):
         news_matrix = sentence_embeddings[news_dict[news_ID]]
-        _embed = {}
-        for word_index in news_matrix.indices:
-            _embed[word_index] = news_matrix[0, word_index]
+        # _embed = {}
 
-        news_tfidf[news_ID] = _embed
-        news_tfidf_str[news_ID] = " ".join("{}:{}".format(key,item) for key,item in _embed.items())
+        # for word_index in news_matrix.indices:
+            # _embed[word_index] = news_matrix[0, word_index]
+
+        news_embed[news_ID] = news_matrix
+
+        news_embed_str[news_ID] = " ".join("{}:{:8f}".format(id,emb) for id, emb in enumerate(news_matrix) )
 
     # news_tfidf['total_dim'] = tfidf_matrix.get_shape()[1]
-    news_tfidf['cold_news'] = {}
+    news_embed['cold_news'] = {}
 
-    return news_tfidf, news_tfidf_str
+    return news_embed, news_embed_str
 
 
 if __name__ == '__main__':

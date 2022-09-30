@@ -33,7 +33,6 @@ offset_list = list(accumulate([
     len(cat_encode), len(sub_cat_encode)
     ]))
 
-    
 if "train" in args.beh_file:
     with open(args.beh_file) as f:
 
