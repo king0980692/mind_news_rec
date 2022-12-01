@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 from nltk.tokenize import word_tokenize
 
-from transformers import AutoTokenizer, AutoModel
+# from transformers import AutoTokenizer, AutoModel
 
 def update_dict(dict, key, value=None):
     if key not in dict:
@@ -21,7 +21,7 @@ def read_news(news_path, args, mode='train'):
     news_index = {}
     word_cnt = Counter()
 
-    tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased')
+    # tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased')
 
     with open(news_path, 'r', encoding='utf-8') as f:
         for line in tqdm(f):
@@ -29,9 +29,9 @@ def read_news(news_path, args, mode='train'):
             doc_id, category, subcategory, title, abstract, url, _, _ = splited
             update_dict(news_index, doc_id)
 
-            # title = title.lower()
-            # title = word_tokenize(title)
-            title = tokenizer.tokenize(title)
+            title = title.lower()
+            title = word_tokenize(title)
+            # title = tokenizer.tokenize(title)
             # title = title
             update_dict(news, doc_id, [title, category, subcategory])
             if mode == 'train':
@@ -57,8 +57,8 @@ def get_doc_input(news, news_index, category_dict, subcategory_dict, word_dict, 
     news_category = np.zeros((news_num, 1), dtype='int32') if args.use_category else None
     news_subcategory = np.zeros((news_num, 1), dtype='int32') if args.use_subcategory else None
 
-    plm = AutoModel.from_pretrained('distilbert-base-uncased')
-    tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased')
+    # plm = AutoModel.from_pretrained('distilbert-base-uncased')
+    # tokenizer = AutoTokenizer.from_pretrained('distilbert-base-uncased')
     
     for key in tqdm(news):
         title, category, subcategory = news[key]
@@ -74,15 +74,15 @@ def get_doc_input(news, news_index, category_dict, subcategory_dict, word_dict, 
         # in order to add [CLS] and [SEP] token, so preserve two position
         for word_id in range(min(args.num_words_title-2, len(title))):
 
-            '''
+            # '''
             if title[word_id] in word_dict:
                 news_title[doc_index, word_id] = word_dict[title[word_id]]
-            '''
+            # '''
 
-            news_title[doc_index, word_id+1] = tokenizer.convert_tokens_to_ids(title[word_id])
+            # news_title[doc_index, word_id+1] = tokenizer.convert_tokens_to_ids(title[word_id])
 
-        news_title[doc_index, 0] = tokenizer.convert_tokens_to_ids('[CLS]')
-        news_title[doc_index, args.num_words_title-1] = tokenizer.convert_tokens_to_ids('[SEP]')
+        # news_title[doc_index, 0] = tokenizer.convert_tokens_to_ids('[CLS]')
+        # news_title[doc_index, args.num_words_title-1] = tokenizer.convert_tokens_to_ids('[SEP]')
 
 
         if args.use_category:

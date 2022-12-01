@@ -18,7 +18,7 @@ from preprocess import read_news, get_doc_input
 from prepare_data import prepare_training_data, prepare_testing_data
 from dataset import DatasetTrain, DatasetTest, DatasetVal, NewsDataset
 
-from transformers import AutoTokenizer, AutoModel
+# from transformers import AutoTokenizer, AutoModel
 
 
 def train(rank, args):

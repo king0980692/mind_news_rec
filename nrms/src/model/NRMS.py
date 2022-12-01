@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-from transformers import AutoModel, AutoTokenizer, AutoConfig
+# from transformers import AutoModel, AutoTokenizer, AutoConfig
 
 from .model_utils import AttentionPooling, MultiHeadSelfAttention
 
@@ -27,11 +27,11 @@ class NewsEncoder(nn.Module):
             mask: batch_size, word_num
         '''
 
-        # word_vecs = self.embedding_matrix(x.long())
+        word_vecs = self.embedding_matrix(x.long())
 
-        word_vecs = x
+        # word_vecs = x
 
-        word_vecs = F.dropout(word_vecs.long(),
+        word_vecs = F.dropout(word_vecs,
                               p=self.drop_rate,
                               training=self.training)
 
@@ -76,19 +76,19 @@ class Model(torch.nn.Module):
         super(Model, self).__init__()
         self.args = args
 
-        config = AutoConfig.from_pretrained('distilbert-base-uncased', output_hidden_state=True)
-        plm = AutoModel.from_pretrained('distilbert-base-uncased', config=config)
+        # config = AutoConfig.from_pretrained('distilbert-base-uncased', output_hidden_state=True)
+        # plm = AutoModel.from_pretrained('distilbert-base-uncased', config=config)
 
         # bert_embeddings = list(plm.children())[0]
         # b_pretrained_word_embedding = list(bert_embeddings.children())[0]
 
         pretrained_word_embedding = torch.from_numpy(embedding_matrix).float()
 
-        import IPython;IPython.embed(colors="linux");exit(1) 
+        # import IPython;IPython.embed(colors="linux");exit(1) 
 
         word_embedding = nn.Embedding.from_pretrained(pretrained_word_embedding,
-                                                      freeze=args.freeze_embedding,
-                                                      padding_idx=0)
+                            freeze=args.freeze_embedding,
+                            padding_idx=0)
 
 
         self.news_encoder = NewsEncoder(args, word_embedding)
