@@ -3,6 +3,7 @@ raw_data/*
 data/*
 exp/*
 *.txt
+*.pkl
 result
 
 # Byte-compiled / optimized / DLL files
