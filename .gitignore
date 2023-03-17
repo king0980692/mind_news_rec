@@ -1,3 +1,4 @@
+*.json
 *.swp
 raw_data/*
 data/*
