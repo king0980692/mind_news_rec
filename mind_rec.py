@@ -107,10 +107,7 @@ def process_ui_query2(sid):
 
     pool_vec = np.array([np.array(embed[it]) if it in embed and it not in observed_items else np.zeros((args.emb_dim,)) for it in item_pool])
 
-    try:
-        scores = pool_vec @ q_vec
-    except:
-        import IPython;IPython.embed(colors='linux');exit(1) 
+    scores = pool_vec @ q_vec
 
 
     # [np.argsort(scores)[::-1]]
@@ -268,9 +265,9 @@ warm_u_queries = warm_u_queries[:args.num_test]
 rec_ui = []
 
 
-for u in warm_u_queries:
-    top_k = process_ui_query2(u)
-exit()
+# for u in warm_u_queries:
+    # top_k = process_ui_query2(u)
+# exit()
 
 print("recommendation ...")
 with concurrent.futures.ProcessPoolExecutor(max_workers=args.worker) as executor:
@@ -279,8 +276,10 @@ with concurrent.futures.ProcessPoolExecutor(max_workers=args.worker) as executor
 print ('write the result to', args.embed+'.ui.rec')
 
 rec_ui = sorted(rec_ui, key=lambda x:int(x.split()[0]))
+rec_ui = [str(id)+"\t"+''.join(rec.split()[1:]) for id,rec in enumerate(rec_ui,1) ]
+print("dump to : ", args.embed+'.ui.rec')
 with open(args.embed+'.ui.rec', 'w') as f:
-    f.writelines(rec_ui)
+    f.writelines("\n".join(rec_ui))
 
 exit()
 

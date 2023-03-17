@@ -1,5 +1,7 @@
 from tqdm import tqdm
-with open('../MIND-large/dev/behaviors.tsv', 'r', encoding='utf-8') as test_f:
+import sys
+# with open('../MIND-large/dev/behaviors.tsv', 'r', encoding='utf-8') as test_f:
+with open(sys.argv[1], 'r', encoding='utf-8') as test_f:
     with open('./truth.txt', 'w', encoding='utf-8') as truth_f:
         for test_ID, line in tqdm(enumerate(test_f)):
             impression_ID, user_ID, time, history, impressions = line.split('\t')

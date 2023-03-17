@@ -16,13 +16,13 @@ parser.add_argument('--verbose', type=bool, default=False)
 args = parser.parse_args()
 dataset = args.dataset
 
-# train_root = '../MIND-%s/train' % dataset
-# dev_root = '../MIND-%s/dev' % dataset
-# test_root = '../MIND-%s/test' % dataset
+train_root = './data/MIND-%s/train' % dataset
+dev_root = './data/MIND-%s/dev' % dataset
+test_root = './data/MIND-%s/test' % dataset
 
-train_root = './raw_data/train/'
-dev_root = './raw_data/valid/'
-test_root = './raw_data/test/'
+# train_root = './raw_data/train/'
+# dev_root = './raw_data/valid/'
+# test_root = './raw_data/test/'
 
 tokenizer = args.tokenizer
 pat = re.compile(r"[\w]+|[.,!?;|]")
